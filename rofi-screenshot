@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-## rofi-screenshot
-## Author: ceuk @ github
+## wl-rofi-screenshot
+## Author: ceuk, rynskyi
 ## Licence: WTFPL
 ## Usage:
-##    show the menu with rofi-screenshot
-##    stop recording with rofi-screenshot -s
+##    show the menu with wl-rofi-screenshot
+##    stop recording with wl-rofi-screenshot -s
 
 # Screenshot directory
 screenshot_directory="${ROFI_SCREENSHOT_DIR:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots}"
@@ -23,107 +23,96 @@ video_to_gif() {
     ffmpeg -i "$1" -i - -filter_complex paletteuse "$2"
 }
 
+delay() {
+  sleep 0.5
+}
+
+notify() {
+  notify-send --app-name="screenshot" "Screenshot" "$1"
+}
+
 countdown() {
-  notify-send --app-name="screenshot" "Screenshot" "Recording in 3" -t 1000
+  notify "Recording in 3"
   sleep 1
-  notify-send --app-name="screenshot" "Screenshot" "Recording in 2" -t 1000
+  notify "Recording in 2"
   sleep 1
-  notify-send --app-name="screenshot" "Screenshot" "Recording in 1" -t 1000
+  notify "Recording in 1"
   sleep 1
 }
 
 crtc() {
-  notify-send --app-name="screenshot" "Screenshot" "Select a region to capture"
-  ffcast -q "$(slop -n -f '-g %g ')" png /tmp/screenshot_clip.png
-  xclip -selection clipboard -t image/png /tmp/screenshot_clip.png
+  notify "Select a region to capture"
+  grim -g "$(slurp)" -t png /tmp/screenshot_clip.png
+  wl-copy < /tmp/screenshot_clip.png
   rm /tmp/screenshot_clip.png
-  notify-send --app-name="screenshot" "Screenshot" "Region copied to Clipboard"
+  notify "Region copied to Clipboard"
 }
 
 crtf() {
-  notify-send --app-name="screenshot" "Screenshot" "Select a region to capture"
-  dt=$1
-  ffcast -q "$(slop -n -f '-g %g ')" png "$screenshot_directory/$dt.png"
-  notify-send --app-name="screenshot" "Screenshot" "Region saved to ${screenshot_directory//${HOME}/~}/$dt.png"
-}
-
-cwtc() {
-  notify-send --app-name="screenshot" "Screenshot" "Select a window to capture"
-  ffcast -q -w png /tmp/screenshot_clip.png
-  xclip -selection clipboard -t image/png /tmp/screenshot_clip.png
-  rm /tmp/screenshot_clip.png
-  notify-send --app-name="screenshot" "Screenshot" "Window copied to Clipboard"
-}
-
-cwtf() {
-  notify-send --app-name="screenshot" "Screenshot" "Select a window to capture"
-  dt=$1
-  ffcast -q "$(slop -n -f '-g %g ')" png "$screenshot_directory/$dt.png"
-  notify-send --app-name="screenshot" "Screenshot" "Window saved to ${screenshot_directory//${HOME}/~}/$dt.png"
+  notify "Select a region to capture"
+  dt="$1"
+  grim -g "$(slurp)" -t png "$screenshot_directory/$dt.png"
+  notify "Region saved to ${screenshot_directory//${HOME}/~}/$dt.png"
 }
 
 cstc() {
-  ffcast -q png /tmp/screenshot_clip.png
-  xclip -selection clipboard -t image/png /tmp/screenshot_clip.png
+  delay
+  grim -t png /tmp/screenshot_clip.png
+  wl-copy < /tmp/screenshot_clip.png
   rm /tmp/screenshot_clip.png
-  notify-send --app-name="screenshot" "Screenshot" "Screenshot copied to Clipboard"
+  notify "Screenshot copied to Clipboard"
 }
 
 cstf() {
-  dt=$1
-  ffcast -q png "$screenshot_directory/$dt.png"
-  notify-send --app-name="screenshot" "Screenshot" "Saved to ${screenshot_directory//${HOME}/~}/$dt.png"
+  delay
+  dt="$1"
+  grim -t png "$screenshot_directory/$dt.png"
+  notify "Saved to ${screenshot_directory//${HOME}/~}/$dt.png"
 }
 
 rgrtf() {
-  notify-send --app-name="screenshot" "Screenshot" "Select a region to record"
-  dt=$1
-  ffcast -q "$(slop -n -f '-g %g ' && countdown)" rec /tmp/screenshot_gif.mp4
-  notify-send --app-name="screenshot" "Screenshot" "Converting to gif… (can take a while)"
-  video_to_gif /tmp/screenshot_gif.mp4 "$screenshot_directory/$dt.gif"
-  rm /tmp/screenshot_gif.mp4
-  notify-send --app-name="screenshot" "Screenshot" "Saved to ${screenshot_directory//${HOME}/~}/$dt.gif"
+  notify "Select a region to record"
+  dt="$1"
+  wf-recorder -g "$(slurp && countdown)" -c gif -f "$screenshot_directory/$dt.gif"
+  notify "Saved to ${screenshot_directory//${HOME}/~}/$dt.gif"
 }
 
 rgstf() {
   countdown
-  dt=$1
-  ffcast -q rec /tmp/screenshot_gif.mp4
-  notify-send --app-name="screenshot" "Screenshot" "Converting to gif… (can take a while)"
-  video_to_gif /tmp/screenshot_gif.mp4 "$screenshot_directory/$dt.gif"
-  rm /tmp/screenshot_gif.mp4
-  notify-send --app-name="screenshot" "Screenshot" "Saved to ${screenshot_directory//${HOME}/~}/$dt.gif"
+  dt="$1"
+  wf-recorder -c gif -f "$screenshot_directory/$dt.gif"
+  notify "Saved to ${screenshot_directory//${HOME}/~}/$dt.gif"
 }
 
 rvrtf() {
-  notify-send --app-name="screenshot" "Screenshot" "Select a region to record"
-  dt=$1
-  ffcast -q "$(slop -n -f '-g %g ' && countdown)" rec "$screenshot_directory/$dt.mp4"
-  notify-send --app-name="screenshot" "Screenshot" "Saved to ${screenshot_directory//${HOME}/~}/$dt.mp4"
+  notify "Select a region to record"
+  dt="$1"
+  wf-recorder -g "$(slurp && countdown)" -f "$screenshot_directory/$dt.mp4"
+  notify "Saved to ${screenshot_directory//${HOME}/~}/$dt.mp4"
 }
 
 rvstf() {
   countdown
-  dt=$1
-  ffcast -q rec "$screenshot_directory/$dt.mp4"
-  notify-send --app-name="screenshot" "Screenshot" "Saved to ${screenshot_directory//${HOME}/~}/$dt.mp4"
+  dt="$1"
+  wf-recorder -f "$screenshot_directory/$dt.mp4"
+  notify "Saved to ${screenshot_directory//${HOME}/~}/$dt.mp4"
 }
 
 stop_recording() {
-  if [ -z "$(pgrep -fxn '(/\S+)*ffmpeg\s.*\sx11grab\s.*')" ]; then
-    notify-send --app-name="screenshot" "Screenshot" "No recording found"
+  if [ -z "$(pgrep -x wf-recorder)" ]; then
+    notify "No recording found"
     exit 1
   fi
-
-  pkill -fxn '(/\S+)*ffmpeg\s.*\sx11grab\s.*'
-  notify-send --app-name="screenshot" "Screenshot" "Recording stopped"
+  pkill -SIGINT -x wf-recorder
+  notify "Recording stopped"
 }
+
 
 get_options() {
   echo "  Region  Clip"
   echo "  Region  File"
-  echo "  Window  Clip"
-  echo "  Window  File"
+  # echo "  Window  Clip"
+  # echo "  Window  File"
   echo "  Screen  Clip"
   echo "  Screen  File"
   echo "  Region  File (GIF)"
@@ -141,8 +130,8 @@ check_deps() {
 }
 
 show_help() {
-  echo ### rofi-screenshot
-  echo "USAGE: rofi-screenshot [OPTION] <argument>"
+  echo ### wl-rofi-screenshot
+  echo "USAGE: wl-rofi-screenshot [OPTION] <argument>"
   echo "(no option)"
   echo "    show the screenshot menu"
   echo "-s, --stop"
@@ -164,14 +153,14 @@ check_directory() {
 }
 
 main() {
-  # check dependencies
-  check_deps slop
-  check_deps ffcast
-  check_deps ffmpeg
-  check_deps xclip
-  check_deps rofi
 
-  # rebind long args as short ones
+  # Check dependencies
+  for dep in slurp grim wf-recorder wl-copy rofi; do
+    check_deps "$dep"
+  done
+
+
+  # Rebind long options to short ones
   for arg in "$@"; do
     shift
     case "$arg" in
@@ -219,8 +208,7 @@ main() {
     exit 1
   fi
 
-  cmd='date "${date_format}"'
-  dt=$(eval $cmd)
+  dt=$(date "$date_format")
 
   # run the selected command
   case $choice in
@@ -266,6 +254,3 @@ main() {
 main "$@" &
 
 exit 0
-
-! /bin/bash
-
