@@ -13,30 +13,37 @@ screenshot_directory="${ROFI_SCREENSHOT_DIR:-${XDG_PICTURES_DIR:-$HOME/Pictures}
 # Default date format
 default_date_format="${ROFI_SCREENSHOT_DATE_FORMAT:-"+%d-%m-%Y %H:%M:%S"}"
 
-# set ffmpeg defaults
-ffmpeg() {
-  command ffmpeg -hide_banner -loglevel error -nostdin "$@"
-}
-
-video_to_gif() {
-  ffmpeg -i "$1" -vf palettegen -f image2 -c:v png - |
-    ffmpeg -i "$1" -i - -filter_complex paletteuse "$2"
-}
 
 delay() {
   sleep 0.5
 }
 
 notify() {
-  notify-send --app-name="screenshot" "Screenshot" "$1"
+  local message="$1"    # Notification message text
+  local timeout="$2"    # Optional timeout value in milliseconds
+  local replace="$3"    # Optional flag to replace the previous notification
+
+  # Build the base argument array with the -p flag so notify-send returns an ID
+  local args=(--app-name="screenshot" -p)
+
+  # If a timeout is provided, add the -t option with the timeout value
+  [ -n "$timeout" ] && args+=(-t "$timeout")
+
+  # If the replace flag is set and we have a stored notification ID, add the -r option to replace it
+  if [ -n "$replace" ] && [ -n "$last_notify_id" ]; then
+    args+=(-r "$last_notify_id")
+  fi
+
+  # Directly assign the returned notification ID to the global variable
+  last_notify_id=$(notify-send "${args[@]}" "Screenshot" "$message")
 }
 
 countdown() {
-  notify "Recording in 3"
+  notify "Recording in 3" 1000
   sleep 1
-  notify "Recording in 2"
+  notify "Recording in 2" 1000 true
   sleep 1
-  notify "Recording in 1"
+  notify "Recording in 1" 1000 true
   sleep 1
 }
 
