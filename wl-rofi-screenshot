@@ -49,7 +49,12 @@ countdown() {
 
 crtc() {
   notify "Select a region to capture"
-  grim -g "$(slurp)" -t png /tmp/screenshot_clip.png
+  local region
+  region=$(slurp)
+  if [ -z "$region" ]; then
+    return 1
+  fi
+  grim -g "$region" -t png /tmp/screenshot_clip.png
   wl-copy < /tmp/screenshot_clip.png
   rm /tmp/screenshot_clip.png
   notify "Region copied to Clipboard"
@@ -58,7 +63,12 @@ crtc() {
 crtf() {
   notify "Select a region to capture"
   dt="$1"
-  grim -g "$(slurp)" -t png "$screenshot_directory/$dt.png"
+  local region
+  region=$(slurp)
+  if [ -z "$region" ]; then
+    return 1
+  fi
+  grim -g "$region" -t png "$screenshot_directory/$dt.png"
   notify "Region saved to ${screenshot_directory//${HOME}/~}/$dt.png"
 }
 
@@ -80,7 +90,13 @@ cstf() {
 rgrtf() {
   notify "Select a region to record"
   dt="$1"
-  wf-recorder -g "$(slurp && countdown)" -c gif -f "$screenshot_directory/$dt.gif"
+  local region
+  region=$(slurp)
+  if [ -z "$region" ]; then
+    return 1
+  fi
+  countdown
+  wf-recorder -g "$region" -c gif -f "$screenshot_directory/$dt.gif"
   notify "Saved to ${screenshot_directory//${HOME}/~}/$dt.gif"
 }
 
@@ -94,7 +110,13 @@ rgstf() {
 rvrtf() {
   notify "Select a region to record"
   dt="$1"
-  wf-recorder -g "$(slurp && countdown)" -f "$screenshot_directory/$dt.mp4"
+  local region
+  region=$(slurp)
+  if [ -z "$region" ]; then
+    return 1
+  fi
+  countdown
+  wf-recorder -g "$region" -f "$screenshot_directory/$dt.mp4"
   notify "Saved to ${screenshot_directory//${HOME}/~}/$dt.mp4"
 }
 
